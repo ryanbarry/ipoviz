@@ -2,6 +2,12 @@ Plot one or more stocks' prices from their first trading day through a fixed
 window afterward, lined up on a shared "days since IPO" axis. Stocks too new to
 fill the window just plot what exists.
 
+![First month after IPO for GOOG, META, SNAP and ANT](assets/example.png)
+
+<sub>`uv run ipoviz -d 1mo GOOG META SNAP ANT`, run 2026-11-25. ANT had only
+been trading a week, so its line is partial. The real output is an interactive
+HTML page with per-point hover.</sub>
+
 ## Usage
 
 ```sh
