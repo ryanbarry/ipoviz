@@ -1,0 +1,21 @@
+[project]
+name = "ipoviz"
+version = "0.1.0"
+description = "Plot stock prices from IPO through a fixed window afterward"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "yfinance>=1.0",
+    "pandas>=2.2",
+    "plotly>=6.0",
+]
+
+[project.scripts]
+ipoviz = "ipoviz.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
