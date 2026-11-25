@@ -16,13 +16,24 @@ uv run ipoviz FB ANT -d 6mo --no-relative  # dollar prices instead of % change
 | `-o/--output` | HTML path (default `ipoviz.html`) |
 | `--no-open` | don't launch a browser |
 | `--no-aliases` | don't map renamed tickers |
+| `--cache-dir` | where fetched prices are kept (default `$XDG_CACHE_HOME/ipoviz`, else `~/.cache/ipoviz`) |
+| `--refresh` | ignore the cache and fetch everything again |
 
 ## How it works
 
 - **Data:** [yfinance](https://github.com/ranaroussi/yfinance) pulls daily
   history from Yahoo Finance (unofficial and occasionally flaky). The first
-  trading day in Yahoo's `period="max"` history counts as the IPO date. Prices
-  are adjusted for splits and dividends.
+  trading day Yahoo has counts as the IPO date. Prices are adjusted for splits
+  only, not dividends, so they show plain price performance.
+- **Cache:** each ticker gets one `SYMBOL.json` in the cache dir, holding its
+  name, first day, `covered_until` (the exclusive date Yahoo has been asked
+  about up to) and its daily prices, one row per line. A run fetches only days
+  past `covered_until`. Windows that end before today never need a refetch.
+  Windows that run past today always recheck the most recent days. Today's row
+  is plotted but never stored, because it can change before the close. When
+  extending, the last cached day is refetched and compared. If Yahoo has
+  rescaled history since (a split), the cached rows get rescaled to match. Use
+  `--refresh` if anything looks off, or just delete the files.
 - **Relative mode:** each line is % change from that stock's first-day open,
   the first public trade. Yahoo has no IPO offer price (FB was offered at $38
   and opened at $42.05), so the open is the closest stand-in.

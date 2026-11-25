@@ -6,7 +6,8 @@ import re
 from dataclasses import dataclass
 
 import pandas as pd
-import yfinance as yf
+
+from .cache import Cache
 
 # Yahoo stores a company's whole history under its *current* ticker and keeps
 # no record of old ones, and retired tickers get reused (FB is now a ProShares
@@ -39,6 +40,8 @@ class Series:
     window_end: pd.Timestamp  # first_day + duration (exclusive)
     listing: float  # first-day open: the first public trade, used as the baseline
     prices: pd.DataFrame  # columns: date, day (calendar days since IPO), close
+    fetched: list  # [start, end) date ranges fetched from Yahoo this run; empty = all cached
+    rescaled: float | None = None  # split factor applied to cached rows, if any
 
     @property
     def complete(self) -> bool:
@@ -67,17 +70,10 @@ def window(history: pd.DataFrame, offset: pd.DateOffset) -> tuple[pd.DataFrame, 
     return df, first, end, float(history["Open"].iloc[0])
 
 
-def fetch(requested: str, offset: pd.DateOffset, use_aliases: bool = True) -> Series:
+def fetch(requested: str, offset: pd.DateOffset, cache: Cache, use_aliases: bool = True, refresh: bool = False) -> Series:
     symbol = requested.upper()
     if use_aliases:
         symbol = RENAMED.get(symbol, symbol)
-    ticker = yf.Ticker(symbol)
-    # period="max" starts at the first trading day. auto_adjust adjusts for
-    # splits and dividends, so the line tracks what a holder actually saw.
-    history = ticker.history(period="max", auto_adjust=True)
-    if history.empty:
-        raise LookupError(f"Yahoo has no price history for {symbol}")
-    prices, first, end, listing = window(history, offset)
-    meta = ticker.history_metadata or {}
-    name = meta.get("longName") or meta.get("shortName") or symbol
-    return Series(requested.upper(), symbol, name, first, end, listing, prices)
+    got = cache.get(symbol, offset, refresh=refresh)
+    prices, first, end, listing = window(got.prices, offset)
+    return Series(requested.upper(), symbol, got.meta.name, first, end, listing, prices, got.fetched, got.rescaled)
